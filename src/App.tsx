@@ -20,42 +20,12 @@ type Values = {
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}万円`
 
 const flowSteps = [
-  {
-    title: '材料を買う',
-    cue: 'まず「材料」という資産が増える。まだ費用ではありません。',
-    focus: 'material' as Focus,
-    route: 'purchase',
-  },
-  {
-    title: '直接材料を投入',
-    cue: 'どの製品に使ったか直接わかる材料は、仕掛品へ直行します。',
-    focus: 'wip' as Focus,
-    route: 'direct',
-  },
-  {
-    title: '間接費を集める',
-    cue: '間接材料・間接労務費・間接経費は、いったん製造間接費へ集めます。',
-    focus: 'wip' as Focus,
-    route: 'overhead-in',
-  },
-  {
-    title: '製造間接費を配賦',
-    cue: '集めた製造間接費を、配賦して仕掛品へ入れます。',
-    focus: 'wip' as Focus,
-    route: 'overhead-out',
-  },
-  {
-    title: '完成品へ振り替える',
-    cue: '完成した分だけ、仕掛品から製品へ居場所が変わります。',
-    focus: 'finished' as Focus,
-    route: 'complete',
-  },
-  {
-    title: '売れた分を費用化',
-    cue: '売れた瞬間に、製品という資産から売上原価という費用へ移ります。',
-    focus: 'sold' as Focus,
-    route: 'sold',
-  },
+  { title: '材料を買う', cue: 'まず「材料」という資産が増える。まだ費用ではありません。', focus: 'material' as Focus, route: 'purchase' },
+  { title: '直接材料を投入', cue: 'どの製品に使ったか直接わかる材料は、仕掛品へ直行します。', focus: 'wip' as Focus, route: 'direct' },
+  { title: '間接費を集める', cue: '間接材料・間接労務費・間接経費は、いったん製造間接費へ集めます。', focus: 'wip' as Focus, route: 'overhead-in' },
+  { title: '製造間接費を配賦', cue: '集めた製造間接費を、配賦して仕掛品へ入れます。', focus: 'wip' as Focus, route: 'overhead-out' },
+  { title: '完成品へ振り替える', cue: '完成した分だけ、仕掛品から製品へ居場所が変わります。', focus: 'finished' as Focus, route: 'complete' },
+  { title: '売れた分を費用化', cue: '売れた瞬間に、製品という資産から売上原価という費用へ移ります。', focus: 'sold' as Focus, route: 'sold' },
 ]
 
 function App() {
@@ -81,18 +51,7 @@ function App() {
     const wip = availableWip - safeCompleted
     const safeSold = Math.min(sold, safeCompleted)
     const product = safeCompleted - safeSold
-    return {
-      material,
-      overhead,
-      wip,
-      product,
-      cogs: safeSold,
-      availableWip,
-      safeCompleted,
-      safeSold,
-      safeDirectMaterial,
-      safeIndirectMaterial,
-    }
+    return { material, overhead, wip, product, cogs: safeSold, availableWip, safeCompleted, safeSold, safeDirectMaterial, safeIndirectMaterial }
   }, [purchase, directMaterial, indirectMaterial, directLabor, indirectLabor, indirectExpense, completed, sold])
 
   const loc = learningLocations[focus]
@@ -183,16 +142,8 @@ function App() {
       </section>
 
       <section className="compare-strip panel">
-        <div>
-          <span>直接費</span>
-          <strong>製品に直接たどれる → 仕掛品へ直行</strong>
-          <small>直接材料費・直接労務費</small>
-        </div>
-        <div>
-          <span>間接費</span>
-          <strong>製品に直接たどれない → 製造間接費へ集めて配賦</strong>
-          <small>間接材料費・間接労務費・間接経費</small>
-        </div>
+        <div><span>直接費</span><strong>製品に直接たどれる → 仕掛品へ直行</strong><small>直接材料費・直接労務費</small></div>
+        <div><span>間接費</span><strong>製品に直接たどれない → 製造間接費へ集めて配賦</strong><small>間接材料費・間接労務費・間接経費</small></div>
       </section>
 
       <section className="insight panel">
@@ -216,8 +167,9 @@ function Tab({ active, onClick, children }: { active: boolean; onClick: () => vo
   return <button className={active ? 'tab active' : 'tab'} onClick={onClick}>{children}</button>
 }
 
-function FlowArrow({ active, label }: { active: boolean; label?: string }) {
-  return <div className={active ? 'flow-arrow active' : 'flow-arrow'}>
+function FlowArrow({ active, label, className = '' }: { active: boolean; label?: string; className?: string }) {
+  const classes = `${className} flow-arrow${active ? ' active' : ''}`.trim()
+  return <div className={classes}>
     {label && <small>{label}</small>}
     <div className="arrow-line"><i /></div>
   </div>
@@ -246,7 +198,7 @@ function FactoryView({ values, focus, route, directLabor, indirectLabor, indirec
         <em>製造中の資産</em>
       </div>
 
-      <FlowArrow active={route === 'complete'} label="完成" />
+      <FlowArrow className="to-finished" active={route === 'complete'} label="完成" />
 
       <div className={focus === 'finished' ? 'cost-node finished focus' : 'cost-node finished'}>
         <small>製品</small><strong>{yen(values.product)}</strong>
@@ -257,7 +209,7 @@ function FactoryView({ values, focus, route, directLabor, indirectLabor, indirec
         <span>B/S</span><b>資産と費用の境界</b><span>P/L</span>
       </div>
 
-      <FlowArrow active={route === 'sold'} label="販売" />
+      <FlowArrow className="to-sold" active={route === 'sold'} label="販売" />
 
       <div className={focus === 'sold' ? 'cost-node sold focus' : 'cost-node sold'}>
         <small>売上原価</small><strong>{yen(values.cogs)}</strong>
@@ -270,12 +222,12 @@ function FactoryView({ values, focus, route, directLabor, indirectLabor, indirec
         <b>間接労務 {yen(indirectLabor)}</b>
         <b>間接経費 {yen(indirectExpense)}</b>
       </div>
-      <FlowArrow active={route === 'overhead-in'} label="集める" />
+      <FlowArrow className="to-overhead" active={route === 'overhead-in'} label="集める" />
       <div className={route === 'overhead-in' || route === 'overhead-out' ? 'cost-node overhead active-overhead' : 'cost-node overhead'}>
         <small>製造間接費</small><strong>{yen(values.overhead)}</strong>
         <em>いったんプール</em>
       </div>
-      <FlowArrow active={route === 'overhead-out'} label="配賦" />
+      <FlowArrow className="overhead-to-wip" active={route === 'overhead-out'} label="配賦" />
     </div>
 
     <div className="factory-caption">
