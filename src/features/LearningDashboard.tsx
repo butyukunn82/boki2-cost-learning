@@ -35,7 +35,7 @@ export default function LearningDashboard() {
     const patternCorrect = patternRows.reduce((s, x) => s + x.correct, 0)
     const patternMastered = Object.values(patterns).filter((s) => s.attempts > 0 && s.correct >= 2 && s.fast >= 1 && s.correct / s.attempts >= .8).length
 
-    const latestCbt = cbt.at(-1)
+    const latestCbt = cbt.length ? cbt[cbt.length - 1] : undefined
     const bestCbt = cbt.length ? Math.max(...cbt.map((x) => x.score)) : null
     const avgCbt = cbt.length ? cbt.reduce((s, x) => s + x.score, 0) / cbt.length : null
 
@@ -56,7 +56,7 @@ export default function LearningDashboard() {
     if (first.length >= 5 && firstFast / first.length < .6) next = '初動反射を優先。正解より「5秒以内」を増やす。'
     else if (patternMastered < 10 && patternAttempts >= 5) next = '工業簿記30型を優先。未反射の型を5つ固める。'
     else if (latestCbt && latestCbt.score < 70) next = `CBTで落とした「${latestCbt.weakTopics.join(' / ') || '未回答'}」をLabへ戻って復習する。`
-    else if (latestCbt?.score && latestCbt.score >= 70) next = 'CBTで70点超え。次は時間短縮と未出論点の穴埋めへ進む。'
+    else if (latestCbt && latestCbt.score >= 70) next = 'CBTで70点超え。次は時間短縮と未出論点の穴埋めへ進む。'
 
     return { first, firstCorrect, firstFast, firstAvg, patterns, patternAttempts, patternCorrect, patternMastered, cbt, latestCbt, bestCbt, avgCbt, weakRanking, masteryScore, next }
   }, [refresh])
