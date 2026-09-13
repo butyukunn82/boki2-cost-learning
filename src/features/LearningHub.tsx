@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
 import InstallPrompt from './InstallPrompt'
+import CostConceptMap from './CostConceptMap'
 import ManufacturingCostReportLab from './ManufacturingCostReportLab'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
@@ -39,6 +40,7 @@ const modeInfo: Record<Mode, { label: string; description: string }> = {
 export default function LearningHub() {
   const topics = useMemo<Record<Mode, Topic[]>>(() => ({
     learn: [
+      { id: 'map', title: '全体地図', subtitle: '工業簿記の現在地を一枚で', component: <CostConceptMap /> },
       { id: 'journey', title: '原価の旅', subtitle: '材料→仕掛品→製品→売上原価', component: <App /> },
       { id: 'mcr', title: '製造原価報告書', subtitle: '仕掛品T勘定と完成品原価をつなぐ', component: <ManufacturingCostReportLab /> },
       { id: 'job-order', title: '個別原価計算', subtitle: '製造指図書ごとに原価を集める', component: <JobOrderCostLab /> },
@@ -71,7 +73,7 @@ export default function LearningHub() {
     const saved = localStorage.getItem('boki2-hub-mode') as Mode | null
     return saved && modeInfo[saved] ? saved : 'learn'
   })
-  const [topicId, setTopicId] = useState(() => localStorage.getItem('boki2-hub-topic') ?? 'journey')
+  const [topicId, setTopicId] = useState(() => localStorage.getItem('boki2-hub-topic') ?? 'map')
 
   const modeTopics = topics[mode]
   const activeTopic = modeTopics.find((t) => t.id === topicId) ?? modeTopics[0]
