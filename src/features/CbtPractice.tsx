@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildCbtQuestions, type CbtQuestion } from '../data/cbtTemplates'
+import { buildSupplementalCbtQuestions } from '../data/cbtSupplemental'
 
 type CbtHistory = {
   at: number
@@ -10,6 +11,20 @@ type CbtHistory = {
 
 const CBT_HISTORY_KEY = 'boki2-cbt-history-v1'
 const normalize = (v: string) => v.replace(/[,，\s円個]/g, '').trim()
+
+function buildExamSet(seed: number): CbtQuestion[] {
+  const pool = [...buildCbtQuestions(seed), ...buildSupplementalCbtQuestions(seed)]
+  let x = (seed * 2654435761) >>> 0
+  const random = () => {
+    x = (x * 1664525 + 1013904223) >>> 0
+    return x / 4294967296
+  }
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, 5).map((q, index) => ({ ...q, id: index + 1, point: 20 }))
+}
 
 function saveHistory(item: CbtHistory) {
   try {
@@ -23,7 +38,7 @@ function saveHistory(item: CbtHistory) {
 
 export default function CbtPractice() {
   const [seed, setSeed] = useState(() => Math.floor(Date.now() / 1000) % 1000000)
-  const questions = useMemo(() => buildCbtQuestions(seed), [seed])
+  const questions = useMemo(() => buildExamSet(seed), [seed])
   const [started, setStarted] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -88,7 +103,7 @@ export default function CbtPractice() {
         <p className="eyebrow">CBT Practice</p>
         <h2>工業簿記 CBT操作・本番演習</h2>
         <p>公式画面を模写せず、<strong>選択・入力・問題切替・見直し・90分</strong>という試験行動だけを独自UIで練習します。</p>
-        <div className="cbt-notice"><strong>類題生成：</strong>開始セットごとに数値が変わり、正解・解説も同じテンプレートから自動計算します。</div>
+        <div className="cbt-notice"><strong>類題生成：</strong>複数論点のテンプレートから毎回5題を抽出。数値・正解・解説を同じデータから自動生成します。</div>
         <button onClick={() => { recorded.current = false; setStarted(true) }}>90分タイマーで開始</button>
       </div>
     </section>
