@@ -22,6 +22,7 @@ const nodes: Node[] = [
   { id: 'method', title: '平均法 / FIFO', plain: '月初仕掛品を混ぜるか分けるか', where: '総合原価計算', group: 'costing', mode: 'learn', topic: 'methods' },
   { id: 'addition', title: '追加材料', plain: 'いつ材料を入れたかを見る', where: '総合原価計算', group: 'costing', mode: 'learn', topic: 'additional-material' },
   { id: 'loss', title: '正常仕損', plain: '失われた原価を誰が負担するか', where: '総合原価計算', group: 'costing', mode: 'learn', topic: 'spoilage-process' },
+  { id: 'loss-allocation', title: '度外視法 原価配分', plain: '仕損費を完成品・月末へどう負担させるか', where: '正常仕損の計算', group: 'costing', mode: 'learn', topic: 'loss-allocation' },
   { id: 'stage', title: '工程別', plain: '前工程費を次工程へ引き継ぐ', where: '総合原価計算', group: 'costing', mode: 'learn', topic: 'spoilage-process' },
   { id: 'grade', title: '組別・等級別', plain: '種類・等級へ原価を分ける', where: '総合原価計算', group: 'costing', mode: 'learn', topic: 'group-grade' },
   { id: 'mcr', title: '製造原価報告書', plain: '仕掛品から製品へ出た原価をまとめる', where: '仕掛品→製品', group: 'costing', mode: 'learn', topic: 'mcr' },
