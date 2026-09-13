@@ -4,11 +4,13 @@ import App from './App'
 import ProcessCostLab from './features/ProcessCostLab'
 import VarianceLab from './features/VarianceLab'
 import OverheadVarianceLab from './features/OverheadVarianceLab'
+import DirectCostingLab from './features/DirectCostingLab'
 import './styles/app.css'
 import './styles/flow-fix.css'
 import './styles/process-lab.css'
 import './styles/variance-lab.css'
 import './styles/overhead-lab.css'
+import './styles/direct-costing-lab.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -17,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ProcessCostLab />
       <VarianceLab />
       <OverheadVarianceLab />
+      <DirectCostingLab />
     </div>
   </React.StrictMode>,
 )
