@@ -22,3 +22,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <LearningHub />
   </React.StrictMode>,
 )
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // オフライン対応の失敗で学習画面を止めない
+    })
+  })
+}
