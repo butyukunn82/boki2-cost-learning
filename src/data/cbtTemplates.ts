@@ -17,6 +17,8 @@ export type CbtQuestion = {
   templateId: string
 }
 
+type QuestionDraft = Omit<CbtQuestion, 'id'>
+
 function rng(seed: number) {
   let x = seed || 1
   return () => {
@@ -31,6 +33,15 @@ function pick<T>(values: T[], random: () => number): T {
 
 function fmt(v: number) {
   return Math.round(v).toLocaleString('ja-JP')
+}
+
+function shuffle<T>(values: T[], random: () => number): T[] {
+  const next = [...values]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1))
+    ;[next[i], next[j]] = [next[j], next[i]]
+  }
+  return next
 }
 
 export function buildCbtQuestions(seed: number): CbtQuestion[] {
@@ -62,9 +73,39 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
   const fixedPerUnit = fixedOh / production
   const fixedInEnding = fixedPerUnit * (production - sales)
 
-  return [
+  const beginWipCost = pick([80000, 100000, 120000, 150000], random)
+  const mcrMaterial = pick([360000, 420000, 480000, 540000], random)
+  const mcrLabor = pick([240000, 280000, 320000, 360000], random)
+  const mcrOh = pick([180000, 220000, 260000, 300000], random)
+  const endingWipCost = pick([120000, 150000, 180000, 210000], random)
+  const currentManufacturing = mcrMaterial + mcrLabor + mcrOh
+  const cogm = beginWipCost + currentManufacturing - endingWipCost
+
+  const jobDm = pick([90000, 120000, 150000, 180000], random)
+  const jobDl = pick([60000, 80000, 100000, 120000], random)
+  const ohRate = pick([60, 80, 100, 120], random)
+  const appliedOh = jobDl * ohRate / 100
+  const jobCost = jobDm + jobDl + appliedOh
+
+  const addEnding = pick([100, 150, 200, 250], random)
+  const addProgress = pick([20, 40, 60, 80], random)
+  const addPoint = pick([30, 50, 70], random)
+  const addMaterialEu = addProgress >= addPoint ? addEnding : 0
+
+  const spoilPoint = pick([30, 50, 70], random)
+  const spoilEndingProgress = pick([20, 40, 60, 80], random)
+  const spoilBurden = spoilEndingProgress >= spoilPoint ? '完成品と月末仕掛品の両方' : '完成品のみ'
+
+  const gradeACount = pick([400, 500, 600], random)
+  const gradeBCount = pick([200, 250, 300], random)
+  const gradeBCoeff = pick([0.5, 0.8], random)
+  const equivalentTotal = gradeACount + gradeBCount * gradeBCoeff
+  const equivalentUnitCost = pick([400, 500, 600], random)
+  const gradeTotalCost = equivalentTotal * equivalentUnitCost
+  const gradeBCost = gradeBCount * gradeBCoeff * equivalentUnitCost
+
+  const candidates: QuestionDraft[] = [
     {
-      id: 1,
       templateId: 'journal-material-route',
       title: '材料の消費と仕訳',
       topic: '勘定連絡',
@@ -78,7 +119,32 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
       diagnosis: '直接費は仕掛品へ直行、間接費は製造間接費へ集める。',
     },
     {
-      id: 2,
+      templateId: 'manufacturing-cost-report',
+      title: '製造原価報告書',
+      topic: '製造原価報告書',
+      stem: `月初仕掛品原価${fmt(beginWipCost)}円、直接材料費${fmt(mcrMaterial)}円、直接労務費${fmt(mcrLabor)}円、製造間接費${fmt(mcrOh)}円、月末仕掛品原価${fmt(endingWipCost)}円である。当期総製造費用と当期製品製造原価を入力しなさい。`,
+      fields: [
+        { key: 'current', label: '当期総製造費用（円）', type: 'number' },
+        { key: 'cogm', label: '当期製品製造原価（円）', type: 'number' },
+      ],
+      answers: { current: String(currentManufacturing), cogm: String(cogm) },
+      point: 20,
+      diagnosis: `当期総製造費用＝材料＋労務＋製造間接費＝${fmt(currentManufacturing)}円。製品製造原価＝月初＋当期総製造費用−月末＝${fmt(cogm)}円。`,
+    },
+    {
+      templateId: 'job-order-costing',
+      title: '個別原価計算',
+      topic: '製造指図書',
+      stem: `製造指図書No.101の直接材料費は${fmt(jobDm)}円、直接労務費は${fmt(jobDl)}円である。製造間接費を直接労務費の${ohRate}%で予定配賦する。予定配賦製造間接費とNo.101の製造原価を入力しなさい。`,
+      fields: [
+        { key: 'appliedOh', label: '予定配賦製造間接費（円）', type: 'number' },
+        { key: 'jobCost', label: 'No.101 製造原価（円）', type: 'number' },
+      ],
+      answers: { appliedOh: String(appliedOh), jobCost: String(jobCost) },
+      point: 20,
+      diagnosis: `予定配賦額＝直接労務費×${ohRate}%＝${fmt(appliedOh)}円。指図書別原価は直接材料費＋直接労務費＋予定配賦額。`,
+    },
+    {
       templateId: 'process-ending-eu',
       title: '総合原価計算',
       topic: '完成品換算量',
@@ -92,7 +158,40 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
       diagnosis: `材料は${fmt(endingWip)}個分、加工費は${fmt(endingWip)}×${progress}%＝${fmt(convEu)}個分。工程始点投入の材料には加工進捗度を掛けない。`,
     },
     {
-      id: 3,
+      templateId: 'additional-material-point',
+      title: '追加材料の投入点',
+      topic: '追加材料',
+      stem: `月末仕掛品は${fmt(addEnding)}個、加工進捗度${addProgress}%。追加材料Bは工程の${addPoint}%地点で一括投入される。月末仕掛品に含まれる材料Bの完成品換算量を入力しなさい。`,
+      fields: [{ key: 'materialBEu', label: '材料B 完成品換算量（個）', type: 'number' }],
+      answers: { materialBEu: String(addMaterialEu) },
+      point: 20,
+      diagnosis: addProgress >= addPoint
+        ? `月末仕掛品は${addPoint}%の投入点を通過済み。材料Bは${fmt(addEnding)}個分すべて投入済み。`
+        : `月末仕掛品は${addPoint}%の投入点に未到達。材料Bはまだ投入されていないので0個。`,
+    },
+    {
+      templateId: 'normal-spoilage-burden',
+      title: '正常仕損の負担先',
+      topic: '正常仕損',
+      stem: `正常仕損は工程の${spoilPoint}%地点で発生し、月末仕掛品の加工進捗度は${spoilEndingProgress}%である。正常仕損費の負担先として適切なものを選びなさい。`,
+      fields: [{ key: 'burden', label: '正常仕損費の負担先', type: 'select', options: ['完成品のみ', '完成品と月末仕掛品の両方', '月末仕掛品のみ', '売上原価'] }],
+      answers: { burden: spoilBurden },
+      point: 20,
+      diagnosis: spoilEndingProgress >= spoilPoint
+        ? '月末仕掛品も仕損発生点を通過しているため、完成品と月末仕掛品の両方が正常仕損費を負担する。'
+        : '月末仕掛品は仕損発生点に未到達なので、正常仕損費は完成品のみが負担する。',
+    },
+    {
+      templateId: 'grade-costing',
+      title: '等級別総合原価計算',
+      topic: '等級別原価計算',
+      stem: `A等級${fmt(gradeACount)}個（等価係数1.0）、B等級${fmt(gradeBCount)}個（等価係数${gradeBCoeff}）を生産し、完成品総合原価は${fmt(gradeTotalCost)}円である。B等級へ配分する原価を入力しなさい。`,
+      fields: [{ key: 'gradeB', label: 'B等級の原価（円）', type: 'number' }],
+      answers: { gradeB: String(gradeBCost) },
+      point: 20,
+      diagnosis: `積数は数量×等価係数。B等級は${fmt(gradeBCount)}×${gradeBCoeff}の積数で総原価を配分し、${fmt(gradeBCost)}円。`,
+    },
+    {
       templateId: 'material-variance',
       title: '直接材料費差異',
       topic: '標準原価',
@@ -106,7 +205,6 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
       diagnosis: `価格差異＝(AP−SP)×AQ＝${fmt(priceVar)}円、数量差異＝SP×(AQ−SQ)＝${fmt(qtyVar)}円。`,
     },
     {
-      id: 4,
       templateId: 'cvp-break-even',
       title: 'CVP分析',
       topic: '損益分岐点',
@@ -117,7 +215,6 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
       diagnosis: `貢献利益率${Math.round(cmRate * 100)}%を先に出し、${fmt(fixed)}÷${Math.round(cmRate * 100)}%＝${fmt(beSales)}円。`,
     },
     {
-      id: 5,
       templateId: 'absorption-direct-profit-gap',
       title: '全部原価と直接原価',
       topic: '固定製造間接費',
@@ -131,4 +228,8 @@ export function buildCbtQuestions(seed: number): CbtQuestion[] {
       diagnosis: `固定費率${fmt(fixedPerUnit)}円/個×期末在庫${fmt(production - sales)}個＝${fmt(fixedInEnding)}円。`,
     },
   ]
+
+  return shuffle(candidates, random)
+    .slice(0, 5)
+    .map((q, index) => ({ ...q, id: index + 1 }))
 }
