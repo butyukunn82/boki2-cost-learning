@@ -3,6 +3,7 @@ import App from '../App'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
 import SpoilageProcessLab from './SpoilageProcessLab'
+import JobOrderCostLab from './JobOrderCostLab'
 import DepartmentAllocationLab from './DepartmentAllocationLab'
 import VarianceLab from './VarianceLab'
 import OverheadVarianceLab from './OverheadVarianceLab'
@@ -33,6 +34,7 @@ export default function LearningHub() {
   const topics = useMemo<Record<Mode, Topic[]>>(() => ({
     learn: [
       { id: 'journey', title: '原価の旅', subtitle: '材料→仕掛品→製品→売上原価', component: <App /> },
+      { id: 'job-order', title: '個別原価計算', subtitle: '製造指図書ごとに原価を集める', component: <JobOrderCostLab /> },
       { id: 'process', title: '総合原価計算', subtitle: '数量と完成品換算量', component: <ProcessCostLab /> },
       { id: 'methods', title: '平均法 vs FIFO', subtitle: '混ぜるか、分けるか', component: <ProcessMethodLab /> },
       { id: 'spoilage-process', title: '正常仕損・工程別', subtitle: '負担先と前工程費の引継ぎ', component: <SpoilageProcessLab /> },
