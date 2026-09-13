@@ -8,30 +8,35 @@ export default function ManufacturingCostReportLab() {
   const [directLabor, setDirectLabor] = useState(320000)
   const [overhead, setOverhead] = useState(260000)
   const [endingWip, setEndingWip] = useState(180000)
+  const [beginFinished, setBeginFinished] = useState(90000)
+  const [endingFinished, setEndingFinished] = useState(160000)
 
   const calc = useMemo(() => {
     const currentManufacturing = directMaterial + directLabor + overhead
     const totalToAccount = beginWip + currentManufacturing
     const safeEnding = Math.min(endingWip, totalToAccount)
     const cogm = totalToAccount - safeEnding
-    return { currentManufacturing, totalToAccount, safeEnding, cogm }
-  }, [beginWip, directMaterial, directLabor, overhead, endingWip])
+    const goodsAvailable = beginFinished + cogm
+    const safeEndingFinished = Math.min(endingFinished, goodsAvailable)
+    const cogs = goodsAvailable - safeEndingFinished
+    return { currentManufacturing, totalToAccount, safeEnding, cogm, goodsAvailable, safeEndingFinished, cogs }
+  }, [beginWip, directMaterial, directLabor, overhead, endingWip, beginFinished, endingFinished])
 
   return <section className="mcr-lab panel">
     <header className="lab-heading">
       <div>
         <p className="eyebrow">Bridge Lab</p>
-        <h2>製造原価報告書：仕掛品から完成品へいくら出た？</h2>
-        <p>報告書を別暗記にしません。<strong>仕掛品勘定の中を文章形式に並べ直したもの</strong>として理解します。</p>
+        <h2>製造原価報告書：仕掛品 → 製品 → B/S・P/Lまでつなぐ</h2>
+        <p>報告書を別暗記にしません。<strong>仕掛品勘定の中を文章形式に並べ直し、その完成品原価が製品在庫を経て売上原価になる</strong>ところまで同じ数字で追います。</p>
       </div>
       <div className="lab-location">
-        <span>どこ？</span><strong>仕掛品 ＞ 完成 ＞ 製品</strong>
-        <span>何を？</span><strong>当期製品製造原価</strong>
-        <span>なぜ？</span><strong>当期に完成して製品へ振り替えた原価を求めるため</strong>
+        <span>どこ？</span><strong>仕掛品 ＞ 製品 ＞ 売上原価</strong>
+        <span>何を？</span><strong>製品製造原価と売上原価</strong>
+        <span>なぜ？</span><strong>工場の原価計算をB/S・P/Lへつなぐため</strong>
       </div>
     </header>
 
-    <div className="mcr-first"><span>問題を見たら？</span><strong>月初仕掛品 ＋ 当期製造費用 − 月末仕掛品 ＝ 当期製品製造原価</strong></div>
+    <div className="mcr-first"><span>問題を見たら？</span><strong>① 月初仕掛品＋当期製造費用−月末仕掛品＝製品製造原価 → ② 月初製品＋製品製造原価−月末製品＝売上原価</strong></div>
 
     <div className="mcr-layout">
       <aside className="mcr-controls">
@@ -40,6 +45,9 @@ export default function ManufacturingCostReportLab() {
         <Range label="直接労務費" value={directLabor} max={700000} onChange={setDirectLabor} />
         <Range label="製造間接費" value={overhead} max={700000} onChange={setOverhead} />
         <Range label="月末仕掛品原価" value={calc.safeEnding} max={calc.totalToAccount} onChange={setEndingWip} />
+        <div className="mcr-control-separator">完成後の製品勘定</div>
+        <Range label="月初製品原価" value={beginFinished} max={500000} onChange={setBeginFinished} />
+        <Range label="月末製品原価" value={calc.safeEndingFinished} max={calc.goodsAvailable} onChange={setEndingFinished} />
       </aside>
 
       <div className="mcr-main">
@@ -70,7 +78,37 @@ export default function ManufacturingCostReportLab() {
         <div className="mcr-flow">
           <div><span>当期投入</span><strong>{yen(calc.currentManufacturing)}</strong></div><b>＋</b><div><span>前月から製造中</span><strong>{yen(beginWip)}</strong></div><b>−</b><div><span>まだ未完成</span><strong>{yen(calc.safeEnding)}</strong></div><b>＝</b><div className="mcr-result"><span>完成して製品へ</span><strong>{yen(calc.cogm)}</strong></div>
         </div>
-        <div className="mcr-memory"><b>反射：</b><span>製造原価報告書は「仕掛品から製品へ出た金額」を求める表。月末仕掛品は消えず、次期のB/Sに残る。</span></div>
+
+        <div className="mcr-financial-bridge">
+          <article className="mcr-product-account">
+            <h3>製品勘定</h3>
+            <div className="mcr-product-equation">
+              <div><span>月初製品</span><strong>{yen(beginFinished)}</strong></div><b>＋</b>
+              <div><span>当期製品製造原価</span><strong>{yen(calc.cogm)}</strong></div><b>−</b>
+              <div><span>月末製品</span><strong>{yen(calc.safeEndingFinished)}</strong></div><b>＝</b>
+              <div className="mcr-cogs"><span>売上原価</span><strong>{yen(calc.cogs)}</strong></div>
+            </div>
+          </article>
+
+          <div className="mcr-statements">
+            <article>
+              <span>B/Sに残る原価</span>
+              <strong>仕掛品 {yen(calc.safeEnding)}</strong>
+              <strong>製品 {yen(calc.safeEndingFinished)}</strong>
+              <small>まだ売れていないので資産として残る。</small>
+            </article>
+            <article className="pl">
+              <span>P/Lへ出る原価</span>
+              <strong>売上原価 {yen(calc.cogs)}</strong>
+              <small>完成しただけでは費用にならず、売れた部分がP/Lへ出る。</small>
+            </article>
+          </div>
+        </div>
+
+        <div className="mcr-journey-strip">
+          <span>材料・労務・間接費</span><b>→</b><span>仕掛品</span><b>→</b><span>製品</span><b>→</b><strong>売れたら売上原価</strong>
+        </div>
+        <div className="mcr-memory"><b>反射：</b><span>製造原価報告書は「仕掛品→製品」の橋。製品勘定は「製品→売上原価」の橋。月末仕掛品と月末製品は消えず、B/Sに残る。</span></div>
       </div>
     </div>
   </section>
