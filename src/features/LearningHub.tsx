@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
+import SpoilageProcessLab from './SpoilageProcessLab'
 import DepartmentAllocationLab from './DepartmentAllocationLab'
 import VarianceLab from './VarianceLab'
 import OverheadVarianceLab from './OverheadVarianceLab'
 import DirectCostingLab from './DirectCostingLab'
 import CvpLab from './CvpLab'
+import LearningDashboard from './LearningDashboard'
 import FirstMoveTrainer from './FirstMoveTrainer'
 import CorePatternTrainer from './CorePatternTrainer'
 import CbtPractice from './CbtPractice'
@@ -23,7 +25,7 @@ type Topic = {
 const modeInfo: Record<Mode, { label: string; description: string }> = {
   learn: { label: '学ぶ', description: '現在地とつながりを理解する' },
   lab: { label: '動かす', description: '数字を触って現象を確かめる' },
-  train: { label: '鍛える', description: '初動・仕訳・解く順番を反射化する' },
+  train: { label: '鍛える', description: '弱点を見て、初動・仕訳・解く順番を反射化する' },
   exam: { label: '本番', description: '補助を消してCBT形式で解く' },
 }
 
@@ -33,6 +35,7 @@ export default function LearningHub() {
       { id: 'journey', title: '原価の旅', subtitle: '材料→仕掛品→製品→売上原価', component: <App /> },
       { id: 'process', title: '総合原価計算', subtitle: '数量と完成品換算量', component: <ProcessCostLab /> },
       { id: 'methods', title: '平均法 vs FIFO', subtitle: '混ぜるか、分けるか', component: <ProcessMethodLab /> },
+      { id: 'spoilage-process', title: '正常仕損・工程別', subtitle: '負担先と前工程費の引継ぎ', component: <SpoilageProcessLab /> },
       { id: 'department', title: '部門別計算', subtitle: '簡便法の相互配賦', component: <DepartmentAllocationLab /> },
     ],
     lab: [
@@ -42,6 +45,7 @@ export default function LearningHub() {
       { id: 'cvp', title: 'CVP', subtitle: '損益分岐点を動かす', component: <CvpLab /> },
     ],
     train: [
+      { id: 'dashboard', title: '学習ダッシュボード', subtitle: '速度・弱点・CBTを一画面で', component: <LearningDashboard /> },
       { id: 'first-move', title: '初動反射', subtitle: '最初の一手を3〜5秒で', component: <FirstMoveTrainer /> },
       { id: 'core-patterns', title: '工業簿記30型', subtitle: '仕訳12型＋解き順18型', component: <CorePatternTrainer /> },
     ],
