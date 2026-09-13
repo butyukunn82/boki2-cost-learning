@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type ReflexQuestion = {
   cue: string
@@ -9,6 +9,16 @@ type ReflexQuestion = {
   tag: string
   trap?: string
 }
+
+type HistoryItem = {
+  tag: string
+  correct: boolean
+  fast: boolean
+  ms: number
+  at: number
+}
+
+const STORAGE_KEY = 'boki2-cost-learning:first-move-history:v1'
 
 const questions: ReflexQuestion[] = [
   {
@@ -78,17 +88,48 @@ const questions: ReflexQuestion[] = [
   },
 ]
 
+function loadHistory(): HistoryItem[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 export default function FirstMoveTrainer() {
   const [index, setIndex] = useState(0)
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [result, setResult] = useState<{ choice: string; correct: boolean; ms: number } | null>(null)
-  const [history, setHistory] = useState<{ tag: string; correct: boolean; fast: boolean }[]>([])
+  const [history, setHistory] = useState<HistoryItem[]>(loadHistory)
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-300)))
+  }, [history])
 
   const q = questions[index]
   const score = useMemo(() => {
     const correct = history.filter((h) => h.correct).length
     const reflex = history.filter((h) => h.correct && h.fast).length
-    return { correct, reflex }
+    const avgMs = history.length ? history.reduce((sum, h) => sum + h.ms, 0) / history.length : 0
+    return { correct, reflex, avgMs }
+  }, [history])
+
+  const weakSummary = useMemo(() => {
+    const map = new Map<string, { weak: number; total: number }>()
+    history.forEach((h) => {
+      const current = map.get(h.tag) ?? { weak: 0, total: 0 }
+      current.total += 1
+      if (!h.correct || !h.fast) current.weak += 1
+      map.set(h.tag, current)
+    })
+    return [...map.entries()]
+      .filter(([, v]) => v.weak > 0)
+      .sort((a, b) => b[1].weak / b[1].total - a[1].weak / a[1].total)
+      .slice(0, 4)
   }, [history])
 
   const answer = (choice: string) => {
@@ -96,7 +137,7 @@ export default function FirstMoveTrainer() {
     const ms = Date.now() - startedAt
     const correct = choice === q.answer
     setResult({ choice, correct, ms })
-    setHistory((h) => [...h, { tag: q.tag, correct, fast: correct && ms <= 5000 }])
+    setHistory((h) => [...h, { tag: q.tag, correct, fast: correct && ms <= 5000, ms, at: Date.now() }])
   }
 
   const next = () => {
@@ -105,10 +146,10 @@ export default function FirstMoveTrainer() {
     setStartedAt(Date.now())
   }
 
-  const weakTags = history
-    .filter((h) => !h.correct || !h.fast)
-    .slice(-5)
-    .map((h) => h.tag)
+  const resetHistory = () => {
+    setHistory([])
+    window.localStorage.removeItem(STORAGE_KEY)
+  }
 
   return (
     <section className="first-move-trainer panel">
@@ -119,8 +160,9 @@ export default function FirstMoveTrainer() {
           <p>最後まで計算しません。問題文を見て、<strong>何の問題か・まず何をするか</strong>を自動化します。</p>
         </div>
         <div className="trainer-score">
-          <div><span>正解</span><b>{score.correct}/{history.length || 0}</b></div>
+          <div><span>正解</span><b>{score.correct}/{history.length}</b></div>
           <div><span>5秒以内</span><b>{score.reflex}</b></div>
+          <div><span>平均初動</span><b>{history.length ? `${(score.avgMs / 1000).toFixed(1)}秒` : '—'}</b></div>
         </div>
       </header>
 
@@ -157,11 +199,13 @@ export default function FirstMoveTrainer() {
           <small>正解でも遅ければ復習対象。誤答なら「誤り方」のタグを残します。</small>
         </div>
         <div>
-          <span>直近の復習候補</span>
-          <strong>{weakTags.length ? [...new Set(weakTags)].join(' / ') : 'まだありません'}</strong>
-          <small>後でこのタグをlocalStorageの弱点履歴へ接続します。</small>
+          <span>弱点ランキング</span>
+          <strong>{weakSummary.length ? weakSummary.map(([tag, v]) => `${tag} ${v.weak}/${v.total}`).join(' / ') : 'まだありません'}</strong>
+          <small>正答でも5秒を超えた回答は「弱点」に数えています。</small>
         </div>
       </div>
+
+      {history.length > 0 && <button className="history-reset" onClick={resetHistory}>反射履歴をリセット</button>}
     </section>
   )
 }
