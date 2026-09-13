@@ -7,6 +7,7 @@ import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
 import AdditionalMaterialLab from './AdditionalMaterialLab'
 import SpoilageProcessLab from './SpoilageProcessLab'
+import NormalLossAllocationLab from './NormalLossAllocationLab'
 import JobOrderCostLab from './JobOrderCostLab'
 import GroupGradeCostLab from './GroupGradeCostLab'
 import DepartmentAllocationLab from './DepartmentAllocationLab'
@@ -61,6 +62,7 @@ export default function LearningHub() {
       { id: 'methods', title: '平均法 vs FIFO', subtitle: '混ぜるか、分けるか', component: <ProcessMethodLab /> },
       { id: 'additional-material', title: '追加材料', subtitle: '投入点と完成品換算量', component: <AdditionalMaterialLab /> },
       { id: 'spoilage-process', title: '正常仕損・工程別', subtitle: '負担先と前工程費の引継ぎ', component: <SpoilageProcessLab /> },
+      { id: 'loss-allocation', title: '度外視法 原価配分', subtitle: '仕損費を完成品・月末へどう負担させるか', component: <NormalLossAllocationLab /> },
       { id: 'group-grade', title: '組別・等級別', subtitle: '種類で分ける / 等価係数で分ける', component: <GroupGradeCostLab /> },
       { id: 'department', title: '部門別計算', subtitle: '簡便法の相互配賦', component: <DepartmentAllocationLab /> },
     ],
