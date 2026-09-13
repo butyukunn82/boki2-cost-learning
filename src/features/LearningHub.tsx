@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
+import ManufacturingCostReportLab from './ManufacturingCostReportLab'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
 import AdditionalMaterialLab from './AdditionalMaterialLab'
@@ -37,6 +38,7 @@ export default function LearningHub() {
   const topics = useMemo<Record<Mode, Topic[]>>(() => ({
     learn: [
       { id: 'journey', title: '原価の旅', subtitle: '材料→仕掛品→製品→売上原価', component: <App /> },
+      { id: 'mcr', title: '製造原価報告書', subtitle: '仕掛品T勘定と完成品原価をつなぐ', component: <ManufacturingCostReportLab /> },
       { id: 'job-order', title: '個別原価計算', subtitle: '製造指図書ごとに原価を集める', component: <JobOrderCostLab /> },
       { id: 'process', title: '総合原価計算', subtitle: '数量と完成品換算量', component: <ProcessCostLab /> },
       { id: 'methods', title: '平均法 vs FIFO', subtitle: '混ぜるか、分けるか', component: <ProcessMethodLab /> },
