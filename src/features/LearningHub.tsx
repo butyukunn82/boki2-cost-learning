@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
+import AdditionalMaterialLab from './AdditionalMaterialLab'
 import SpoilageProcessLab from './SpoilageProcessLab'
 import JobOrderCostLab from './JobOrderCostLab'
 import GroupGradeCostLab from './GroupGradeCostLab'
@@ -39,6 +40,7 @@ export default function LearningHub() {
       { id: 'job-order', title: '個別原価計算', subtitle: '製造指図書ごとに原価を集める', component: <JobOrderCostLab /> },
       { id: 'process', title: '総合原価計算', subtitle: '数量と完成品換算量', component: <ProcessCostLab /> },
       { id: 'methods', title: '平均法 vs FIFO', subtitle: '混ぜるか、分けるか', component: <ProcessMethodLab /> },
+      { id: 'additional-material', title: '追加材料', subtitle: '投入点と完成品換算量', component: <AdditionalMaterialLab /> },
       { id: 'spoilage-process', title: '正常仕損・工程別', subtitle: '負担先と前工程費の引継ぎ', component: <SpoilageProcessLab /> },
       { id: 'group-grade', title: '組別・等級別', subtitle: '種類で分ける / 等価係数で分ける', component: <GroupGradeCostLab /> },
       { id: 'department', title: '部門別計算', subtitle: '簡便法の相互配賦', component: <DepartmentAllocationLab /> },
