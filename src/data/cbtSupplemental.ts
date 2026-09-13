@@ -55,6 +55,18 @@ export function buildSupplementalCbtQuestions(seed: number): CbtQuestion[] {
   const laborRateVariance = (actualRate - standardRate) * actualHours
   const laborEfficiencyVariance = standardRate * (actualHours - standardHours)
 
+  const cardMaterialQty = pick([2, 3, 4, 5], random)
+  const cardMaterialPrice = pick([300, 400, 500, 600], random)
+  const cardLaborHours = pick([1, 1.5, 2, 2.5], random)
+  const cardLaborRate = pick([1200, 1400, 1600, 1800], random)
+  const cardVariableOhRate = pick([300, 400, 500, 600], random)
+  const cardFixedOhRate = pick([200, 300, 400, 500], random)
+  const cardUnits = pick([80, 100, 120, 150], random)
+  const unitStandardCost = cardMaterialQty * cardMaterialPrice + cardLaborHours * cardLaborRate + cardLaborHours * (cardVariableOhRate + cardFixedOhRate)
+  const totalStandardCost = unitStandardCost * cardUnits
+  const cardSq = cardMaterialQty * cardUnits
+  const cardSh = cardLaborHours * cardUnits
+
   return [
     {
       id: 101,
@@ -97,6 +109,21 @@ export function buildSupplementalCbtQuestions(seed: number): CbtQuestion[] {
       answers: { rate: String(laborRateVariance), efficiency: String(laborEfficiencyVariance) },
       point: 20,
       diagnosis: `賃率差異＝(AR−SR)×AH＝${fmt(laborRateVariance)}円、作業時間差異＝SR×(AH−SH)＝${fmt(laborEfficiencyVariance)}円。材料差異の価格・数量と同じ構造で考える。`,
+    },
+    {
+      id: 104,
+      templateId: 'standard-cost-card',
+      title: '標準原価カード',
+      topic: '標準原価カード',
+      stem: `製品1個の標準は、材料${cardMaterialQty}kg×${fmt(cardMaterialPrice)}円/kg、直接労務${cardLaborHours}時間×${fmt(cardLaborRate)}円/時、変動製造間接費${fmt(cardVariableOhRate)}円/時、固定製造間接費${fmt(cardFixedOhRate)}円/時である。完成量${fmt(cardUnits)}個の標準製造原価、標準材料消費量SQ、標準作業時間SHを入力しなさい。`,
+      fields: [
+        { key: 'total', label: '完成品の標準製造原価（円）', type: 'number' },
+        { key: 'sq', label: '標準材料消費量 SQ（kg）', type: 'number' },
+        { key: 'sh', label: '標準作業時間 SH（時間）', type: 'number' },
+      ],
+      answers: { total: String(Math.round(totalStandardCost)), sq: String(cardSq), sh: String(cardSh) },
+      point: 20,
+      diagnosis: `まず1個あたり標準原価${fmt(unitStandardCost)}円を作る。完成${fmt(cardUnits)}個なら総標準原価${fmt(totalStandardCost)}円、SQ=${fmt(cardSq)}kg、SH=${fmt(cardSh)}時間。`,
     },
   ]
 }
