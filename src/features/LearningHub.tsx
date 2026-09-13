@@ -10,6 +10,7 @@ import OverheadVarianceLab from './OverheadVarianceLab'
 import DirectCostingLab from './DirectCostingLab'
 import CvpLab from './CvpLab'
 import LearningDashboard from './LearningDashboard'
+import MisconceptionReview from './MisconceptionReview'
 import FirstMoveTrainer from './FirstMoveTrainer'
 import CorePatternTrainer from './CorePatternTrainer'
 import CbtPractice from './CbtPractice'
@@ -48,6 +49,7 @@ export default function LearningHub() {
     ],
     train: [
       { id: 'dashboard', title: '学習ダッシュボード', subtitle: '速度・弱点・CBTを一画面で', component: <LearningDashboard /> },
+      { id: 'misconception', title: '弱点復習', subtitle: '誤概念を15秒で矯正', component: <MisconceptionReview /> },
       { id: 'first-move', title: '初動反射', subtitle: '最初の一手を3〜5秒で', component: <FirstMoveTrainer /> },
       { id: 'core-patterns', title: '工業簿記30型', subtitle: '仕訳12型＋解き順18型', component: <CorePatternTrainer /> },
     ],
