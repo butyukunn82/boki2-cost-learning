@@ -35,11 +35,12 @@ function NormalLossPanel() {
   const [completed, setCompleted] = useState(700)
   const [endingWip, setEndingWip] = useState(200)
   const [normalLoss, setNormalLoss] = useState(100)
-  const [cost, setCost] = useState(900000)
 
   const judgment = mode === 'unknown' ? 'both' : endingProgress >= lossPoint ? 'both' : 'completed'
-  const goodUnits = completed + (judgment === 'both' ? endingWip * endingProgress / 100 : 0)
-  const burdenPerEq = normalLoss > 0 ? cost / Math.max(goodUnits, 1) : 0
+  const endingMaterialEu = endingWip
+  const endingConversionEu = endingWip * endingProgress / 100
+  const lossMaterialEu = normalLoss
+  const lossConversionEu = mode === 'known' ? normalLoss * lossPoint / 100 : null
 
   return <div className="loss-panel">
     <div className="loss-controls">
@@ -52,7 +53,6 @@ function NormalLossPanel() {
       <Range label="月末加工進捗度" value={endingProgress} min={0} max={100} step={5} suffix="%" onChange={setEndingProgress} />
       {mode === 'known' && <Range label="正常仕損の発生点" value={lossPoint} min={0} max={100} step={5} suffix="%" onChange={setLossPoint} />}
       <Range label="正常仕損数量" value={normalLoss} min={0} max={300} step={25} suffix="個" onChange={setNormalLoss} />
-      <Range label="当月投入原価（説明用）" value={cost} min={200000} max={1600000} step={50000} suffix="円" onChange={setCost} />
     </div>
 
     <div className="loss-visual">
@@ -80,10 +80,33 @@ function NormalLossPanel() {
         <div><span>正常仕損</span><strong>{normalLoss.toLocaleString('ja-JP')}個</strong><small>異常仕損とは分けて考える</small></div>
       </div>
 
-      <div className="loss-memory">
-        <b>反射：</b><span>「仕損発生点」と「月末仕掛品の加工進捗度」を比べる。月末仕掛品が仕損点を通過していれば両者負担、通過前なら完成品のみ負担。</span>
+      <div className="loss-equivalent-grid">
+        <article>
+          <span>月末仕掛品の材料換算量</span>
+          <strong>{Math.round(endingMaterialEu).toLocaleString('ja-JP')}個分</strong>
+          <small>材料は工程始点で全量投入する前提。加工進捗度は掛けない。</small>
+        </article>
+        <article>
+          <span>月末仕掛品の加工換算量</span>
+          <strong>{Math.round(endingConversionEu).toLocaleString('ja-JP')}個分</strong>
+          <small>{endingWip.toLocaleString('ja-JP')}個 × {endingProgress}%</small>
+        </article>
+        <article>
+          <span>仕損の材料換算量</span>
+          <strong>{Math.round(lossMaterialEu).toLocaleString('ja-JP')}個分</strong>
+          <small>始点投入材料は、仕損品にもすでに100%入っている。</small>
+        </article>
+        <article>
+          <span>仕損の加工換算量</span>
+          <strong>{lossConversionEu === null ? '発生点を確認' : `${Math.round(lossConversionEu).toLocaleString('ja-JP')}個分`}</strong>
+          <small>{lossConversionEu === null ? '発生点不明なら問題の条件に従って処理する。' : `${normalLoss.toLocaleString('ja-JP')}個 × 仕損点${lossPoint}%`}</small>
+        </article>
       </div>
-      <div className="loss-note">参考感覚値：投入原価 {money(cost)} ÷ 負担側の換算量 {Math.round(goodUnits).toLocaleString('ja-JP')} ≒ {money(burdenPerEq)} / 換算単位。ここでは負担判定の理解を優先し、実際の問題では材料費・加工費を分けて計算します。</div>
+
+      <div className="loss-memory">
+        <b>反射：</b><span>①仕損点と月末進捗度で負担先を決める → ②材料費と加工費を分ける → ③材料は投入時点、加工は進捗度で換算量を作る。</span>
+      </div>
+      <div className="loss-note">「仕損100個＝材料も加工も100個分」ではありません。始点投入材料は100個分でも、加工費は仕損が発生した地点までしか投入されていません。</div>
     </div>
   </div>
 }
