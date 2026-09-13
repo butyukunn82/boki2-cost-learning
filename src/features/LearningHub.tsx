@@ -10,6 +10,7 @@ import JobOrderCostLab from './JobOrderCostLab'
 import GroupGradeCostLab from './GroupGradeCostLab'
 import DepartmentAllocationLab from './DepartmentAllocationLab'
 import VarianceLab from './VarianceLab'
+import LaborVarianceLab from './LaborVarianceLab'
 import OverheadVarianceLab from './OverheadVarianceLab'
 import DirectCostingLab from './DirectCostingLab'
 import CvpLab from './CvpLab'
@@ -50,6 +51,7 @@ export default function LearningHub() {
     ],
     lab: [
       { id: 'material-variance', title: '材料費差異', subtitle: '価格差異・数量差異', component: <VarianceLab /> },
+      { id: 'labor-variance', title: '労務費差異', subtitle: '賃率差異・作業時間差異', component: <LaborVarianceLab /> },
       { id: 'overhead-variance', title: 'シュラッター図', subtitle: '製造間接費差異', component: <OverheadVarianceLab /> },
       { id: 'direct-costing', title: '全部原価 vs 直接原価', subtitle: '固定製造間接費の居場所', component: <DirectCostingLab /> },
       { id: 'cvp', title: 'CVP', subtitle: '損益分岐点を動かす', component: <CvpLab /> },
