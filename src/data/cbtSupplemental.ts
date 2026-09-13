@@ -48,6 +48,13 @@ export function buildSupplementalCbtQuestions(seed: number): CbtQuestion[] {
   const machiningFinal = machining + powerToMachining + repairToMachining + powerReceived * .5 + repairReceived * (.45 / .8)
   const assemblyFinal = assembly + powerToAssembly + repairToAssembly + powerReceived * .5 + repairReceived * (.35 / .8)
 
+  const standardRate = pick([1200, 1400, 1500, 1600], random)
+  const actualRate = standardRate + pick([50, 100, 150, 200], random)
+  const standardHours = pick([700, 800, 900, 1000], random)
+  const actualHours = standardHours + pick([40, 60, 80, 100], random)
+  const laborRateVariance = (actualRate - standardRate) * actualHours
+  const laborEfficiencyVariance = standardRate * (actualHours - standardHours)
+
   return [
     {
       id: 101,
@@ -76,6 +83,20 @@ export function buildSupplementalCbtQuestions(seed: number): CbtQuestion[] {
       answers: { machining: String(Math.round(machiningFinal)), assembly: String(Math.round(assemblyFinal)) },
       point: 20,
       diagnosis: '簡便法の相互配賦は、第1次で補助部門間のやり取りを反映し、第2次で受取額だけを製造部門へ配る。最後に全部門費合計と一致するか検算する。',
+    },
+    {
+      id: 103,
+      templateId: 'direct-labor-variance',
+      title: '直接労務費差異',
+      topic: '直接労務費差異',
+      stem: `標準賃率${fmt(standardRate)}円/時、実際賃率${fmt(actualRate)}円/時、標準作業時間${fmt(standardHours)}時間、実際作業時間${fmt(actualHours)}時間である。賃率差異と作業時間差異を入力しなさい（不利差異は正の数）。`,
+      fields: [
+        { key: 'rate', label: '賃率差異（円）', type: 'number' },
+        { key: 'efficiency', label: '作業時間差異（円）', type: 'number' },
+      ],
+      answers: { rate: String(laborRateVariance), efficiency: String(laborEfficiencyVariance) },
+      point: 20,
+      diagnosis: `賃率差異＝(AR−SR)×AH＝${fmt(laborRateVariance)}円、作業時間差異＝SR×(AH−SH)＝${fmt(laborEfficiencyVariance)}円。材料差異の価格・数量と同じ構造で考える。`,
     },
   ]
 }
