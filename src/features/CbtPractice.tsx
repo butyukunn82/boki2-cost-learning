@@ -1,22 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-type Field = {
-  key: string
-  label: string
-  type: 'number' | 'select'
-  options?: string[]
-}
-
-type CbtQuestion = {
-  id: number
-  title: string
-  topic: string
-  stem: string
-  fields: Field[]
-  answers: Record<string, string>
-  point: number
-  diagnosis: string
-}
+import { buildCbtQuestions, type CbtQuestion } from '../data/cbtTemplates'
 
 type CbtHistory = {
   at: number
@@ -26,72 +9,6 @@ type CbtHistory = {
 }
 
 const CBT_HISTORY_KEY = 'boki2-cbt-history-v1'
-
-const questions: CbtQuestion[] = [
-  {
-    id: 1,
-    title: '材料の消費と仕訳',
-    topic: '勘定連絡',
-    stem: '直接材料費60,000円、間接材料費10,000円を製造に投入した。直接材料費の借方科目と、間接材料費の借方科目を選びなさい。',
-    fields: [
-      { key: 'direct', label: '直接材料費の借方', type: 'select', options: ['仕掛品', '製造間接費', '製品', '売上原価'] },
-      { key: 'indirect', label: '間接材料費の借方', type: 'select', options: ['仕掛品', '製造間接費', '製品', '売上原価'] },
-    ],
-    answers: { direct: '仕掛品', indirect: '製造間接費' },
-    point: 20,
-    diagnosis: '直接費は仕掛品へ直行、間接費は製造間接費へ集める。'
-  },
-  {
-    id: 2,
-    title: '総合原価計算',
-    topic: '完成品換算量',
-    stem: '月末仕掛品200個、加工進捗度50%。材料は工程始点で全量投入する。月末仕掛品の材料の完成品換算量と、加工費の完成品換算量を入力しなさい。',
-    fields: [
-      { key: 'matEu', label: '材料 完成品換算量（個）', type: 'number' },
-      { key: 'convEu', label: '加工費 完成品換算量（個）', type: 'number' },
-    ],
-    answers: { matEu: '200', convEu: '100' },
-    point: 20,
-    diagnosis: '工程始点投入の材料には加工進捗度を掛けない。'
-  },
-  {
-    id: 3,
-    title: '直接材料費差異',
-    topic: '標準原価',
-    stem: '標準価格500円、実際価格520円、標準数量1,000個、実際数量1,100個。価格差異と数量差異の金額を入力しなさい（不利差異は正の数で入力）。',
-    fields: [
-      { key: 'priceVar', label: '価格差異（円）', type: 'number' },
-      { key: 'qtyVar', label: '数量差異（円）', type: 'number' },
-    ],
-    answers: { priceVar: '22000', qtyVar: '50000' },
-    point: 20,
-    diagnosis: '価格差異は実際数量AQ、数量差異は標準価格SPを使う。'
-  },
-  {
-    id: 4,
-    title: 'CVP分析',
-    topic: '損益分岐点',
-    stem: '固定費300,000円、変動費率60%である。損益分岐点売上高を入力しなさい。',
-    fields: [{ key: 'beSales', label: '損益分岐点売上高（円）', type: 'number' }],
-    answers: { beSales: '750000' },
-    point: 20,
-    diagnosis: '貢献利益率40%を先に出し、固定費÷貢献利益率。'
-  },
-  {
-    id: 5,
-    title: '全部原価と直接原価',
-    topic: '固定製造間接費',
-    stem: '生産量1,000個、販売量800個、固定製造間接費300,000円。期首・期末に仕掛品はない。全部原価計算で期末製品に繰り延べられる固定製造間接費と、全部原価計算の利益が直接原価計算より多くなる金額を入力しなさい。',
-    fields: [
-      { key: 'fixedInv', label: '期末製品に含まれる固定製造間接費（円）', type: 'number' },
-      { key: 'profitDiff', label: '利益差（円）', type: 'number' },
-    ],
-    answers: { fixedInv: '60000', profitDiff: '60000' },
-    point: 20,
-    diagnosis: '固定製造間接費300円/個×期末在庫200個＝60,000円。'
-  },
-]
-
 const normalize = (v: string) => v.replace(/[,，\s円個]/g, '').trim()
 
 function saveHistory(item: CbtHistory) {
@@ -100,11 +17,13 @@ function saveHistory(item: CbtHistory) {
     const current = raw ? JSON.parse(raw) as CbtHistory[] : []
     localStorage.setItem(CBT_HISTORY_KEY, JSON.stringify([...current, item].slice(-50)))
   } catch {
-    // 学習継続を優先し、保存失敗では試験を止めない
+    // 保存失敗でも試験は継続する
   }
 }
 
 export default function CbtPractice() {
+  const [seed, setSeed] = useState(() => Math.floor(Date.now() / 1000) % 1000000)
+  const questions = useMemo(() => buildCbtQuestions(seed), [seed])
   const [started, setStarted] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -137,7 +56,7 @@ export default function CbtPractice() {
       return { id: q.id, correct, checks }
     })
     return { score, perQuestion }
-  }, [answers])
+  }, [answers, questions])
 
   useEffect(() => {
     if (!submitted || recorded.current) return
@@ -146,15 +65,21 @@ export default function CbtPractice() {
       .map((q) => q.topic)
     saveHistory({ at: Date.now(), score: result.score, secondsUsed: 90 * 60 - secondsLeft, weakTopics })
     recorded.current = true
-  }, [submitted, result, secondsLeft])
+  }, [submitted, result, secondsLeft, questions])
 
   const q = questions[current]
   const answeredCount = questions.filter((question) => question.fields.every((f) => (answers[`${question.id}:${f.key}`] ?? '').trim() !== '')).length
   const time = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`
 
-  const startExam = () => {
+  const resetForNewSet = () => {
     recorded.current = false
-    setStarted(true)
+    setSubmitted(false)
+    setStarted(false)
+    setCurrent(0)
+    setAnswers({})
+    setFlagged([])
+    setSecondsLeft(90 * 60)
+    setSeed((s) => s + 1)
   }
 
   if (!started) {
@@ -162,9 +87,9 @@ export default function CbtPractice() {
       <div className="cbt-start">
         <p className="eyebrow">CBT Practice</p>
         <h2>工業簿記 CBT操作・本番演習</h2>
-        <p>公式画面のコピーではなく、日商簿記2級ネット試験の<strong>選択・入力・問題切替・見直し・90分</strong>という操作要素を独自UIで練習します。</p>
-        <div className="cbt-notice"><strong>v1：</strong>工業簿記・原価計算のオリジナル5題。商業簿記はまだ含めません。</div>
-        <button onClick={startExam}>90分タイマーで開始</button>
+        <p>公式画面を模写せず、<strong>選択・入力・問題切替・見直し・90分</strong>という試験行動だけを独自UIで練習します。</p>
+        <div className="cbt-notice"><strong>類題生成：</strong>開始セットごとに数値が変わり、正解・解説も同じテンプレートから自動計算します。</div>
+        <button onClick={() => { recorded.current = false; setStarted(true) }}>90分タイマーで開始</button>
       </div>
     </section>
   }
@@ -202,12 +127,12 @@ export default function CbtPractice() {
           <div className="cbt-actions"><button disabled={current === 0} onClick={() => setCurrent((i) => Math.max(0, i - 1))}>← 前へ</button><button disabled={current === questions.length - 1} onClick={() => setCurrent((i) => Math.min(questions.length - 1, i + 1))}>次へ →</button></div>
         </main>
       </div>
-      <div className="cbt-submit"><span>本番想定：途中では正誤を表示しません。</span><button onClick={() => setSubmitted(true)}>採点して終了</button></div>
-    </> : <CbtResult result={result} answers={answers} onRetry={() => { recorded.current = false; setSubmitted(false); setStarted(false); setCurrent(0); setAnswers({}); setFlagged([]); setSecondsLeft(90 * 60) }} />}
+      <div className="cbt-submit"><span>途中では正誤を表示しません。</span><button onClick={() => setSubmitted(true)}>採点して終了</button></div>
+    </> : <CbtResult questions={questions} result={result} answers={answers} onRetry={resetForNewSet} />}
   </section>
 }
 
-function CbtResult({ result, answers, onRetry }: { result: { score: number; perQuestion: { id: number; correct: boolean; checks: boolean[] }[] }; answers: Record<string, string>; onRetry: () => void }) {
+function CbtResult({ questions, result, answers, onRetry }: { questions: CbtQuestion[]; result: { score: number; perQuestion: { id: number; correct: boolean; checks: boolean[] }[] }; answers: Record<string, string>; onRetry: () => void }) {
   return <div className="cbt-result">
     <div className="cbt-score"><span>得点</span><strong>{result.score}</strong><b>/ 100</b><small>{result.score >= 70 ? '70点以上：この演習では合格ライン' : '弱点を確認して再挑戦'}</small></div>
     <div className="cbt-review">
@@ -220,6 +145,6 @@ function CbtResult({ result, answers, onRetry }: { result: { score: number; perQ
         </article>
       })}
     </div>
-    <button className="cbt-retry" onClick={onRetry}>最初からやり直す</button>
+    <button className="cbt-retry" onClick={onRetry}>数値を変えた新しいセットへ</button>
   </div>
 }
