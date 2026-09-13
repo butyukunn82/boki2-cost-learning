@@ -22,6 +22,7 @@ export default function DirectCostingLab() {
     const absorptionInventory = absorptionUnitCost * endingQty
     const absorptionIncome = revenue - absorptionCogs
     const fixedInAbsorptionInventory = fixedPerUnit * endingQty
+    const fixedInAbsorptionCogs = fixedMfgOverhead - fixedInAbsorptionInventory
 
     const directCogs = directUnitCost * safeSales
     const directInventory = directUnitCost * endingQty
@@ -39,6 +40,7 @@ export default function DirectCostingLab() {
       absorptionInventory,
       absorptionIncome,
       fixedInAbsorptionInventory,
+      fixedInAbsorptionCogs,
       directCogs,
       directInventory,
       directIncome,
@@ -87,7 +89,7 @@ export default function DirectCostingLab() {
             unitCost={calc.absorptionUnitCost}
             inventory={calc.absorptionInventory}
             cogs={calc.absorptionCogs}
-            periodFixed={fixedMfgOverhead - calc.fixedInAbsorptionInventory}
+            fixedPlAmount={calc.fixedInAbsorptionCogs}
             fixedInventory={calc.fixedInAbsorptionInventory}
             income={calc.absorptionIncome}
             revenue={calc.revenue}
@@ -99,7 +101,7 @@ export default function DirectCostingLab() {
             unitCost={calc.directUnitCost}
             inventory={calc.directInventory}
             cogs={calc.directCogs}
-            periodFixed={fixedMfgOverhead}
+            fixedPlAmount={fixedMfgOverhead}
             fixedInventory={0}
             income={calc.directIncome}
             revenue={calc.revenue}
@@ -144,14 +146,14 @@ export default function DirectCostingLab() {
   )
 }
 
-function CostingWorld({ kind, subtitle, unitCost, inventory, cogs, periodFixed, fixedInventory, income, revenue, direct }: { kind: string; subtitle: string; unitCost: number; inventory: number; cogs: number; periodFixed: number; fixedInventory: number; income: number; revenue: number; direct: boolean }) {
+function CostingWorld({ kind, subtitle, unitCost, inventory, cogs, fixedPlAmount, fixedInventory, income, revenue, direct }: { kind: string; subtitle: string; unitCost: number; inventory: number; cogs: number; fixedPlAmount: number; fixedInventory: number; income: number; revenue: number; direct: boolean }) {
   return <article className={direct ? 'costing-world direct-world' : 'costing-world absorption-world'}>
     <header><span>{kind}</span><small>{subtitle}</small></header>
     <div className="cost-stack">
       <div><span>製品原価/個</span><strong>{yen(unitCost)}</strong></div>
       <div className="bs-row"><span>B/S 期末製品</span><strong>{yen(inventory)}</strong>{!direct && <small>うち固定費 {yen(fixedInventory)}</small>}</div>
       <div className="pl-row"><span>P/L 売上原価</span><strong>{yen(cogs)}</strong></div>
-      <div className="pl-row"><span>P/L 当期固定費</span><strong>{yen(periodFixed)}</strong></div>
+      <div className="pl-row"><span>{direct ? 'P/L 固定製造間接費（別建て）' : '売上原価に含まれる固定製造間接費'}</span><strong>{yen(fixedPlAmount)}</strong></div>
     </div>
     <div className="world-profit"><span>売上 {yen(revenue)} に対する簡易利益</span><strong>{yen(income)}</strong></div>
   </article>
