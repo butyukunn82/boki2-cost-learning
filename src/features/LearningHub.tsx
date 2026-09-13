@@ -10,6 +10,7 @@ import SpoilageProcessLab from './SpoilageProcessLab'
 import JobOrderCostLab from './JobOrderCostLab'
 import GroupGradeCostLab from './GroupGradeCostLab'
 import DepartmentAllocationLab from './DepartmentAllocationLab'
+import StandardCostCardLab from './StandardCostCardLab'
 import VarianceLab from './VarianceLab'
 import LaborVarianceLab from './LaborVarianceLab'
 import OverheadVarianceLab from './OverheadVarianceLab'
@@ -52,6 +53,7 @@ export default function LearningHub() {
       { id: 'department', title: '部門別計算', subtitle: '簡便法の相互配賦', component: <DepartmentAllocationLab /> },
     ],
     lab: [
+      { id: 'standard-card', title: '標準原価カード', subtitle: '製品1個の標準原価レシピ', component: <StandardCostCardLab /> },
       { id: 'material-variance', title: '材料費差異', subtitle: '価格差異・数量差異', component: <VarianceLab /> },
       { id: 'labor-variance', title: '労務費差異', subtitle: '賃率差異・作業時間差異', component: <LaborVarianceLab /> },
       { id: 'overhead-variance', title: 'シュラッター図', subtitle: '製造間接費差異', component: <OverheadVarianceLab /> },
