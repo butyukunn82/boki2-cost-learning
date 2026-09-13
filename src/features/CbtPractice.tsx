@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Field = {
   key: string
@@ -17,6 +17,15 @@ type CbtQuestion = {
   point: number
   diagnosis: string
 }
+
+type CbtHistory = {
+  at: number
+  score: number
+  secondsUsed: number
+  weakTopics: string[]
+}
+
+const CBT_HISTORY_KEY = 'boki2-cbt-history-v1'
 
 const questions: CbtQuestion[] = [
   {
@@ -85,6 +94,16 @@ const questions: CbtQuestion[] = [
 
 const normalize = (v: string) => v.replace(/[,，\s円個]/g, '').trim()
 
+function saveHistory(item: CbtHistory) {
+  try {
+    const raw = localStorage.getItem(CBT_HISTORY_KEY)
+    const current = raw ? JSON.parse(raw) as CbtHistory[] : []
+    localStorage.setItem(CBT_HISTORY_KEY, JSON.stringify([...current, item].slice(-50)))
+  } catch {
+    // 学習継続を優先し、保存失敗では試験を止めない
+  }
+}
+
 export default function CbtPractice() {
   const [started, setStarted] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -92,6 +111,7 @@ export default function CbtPractice() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [flagged, setFlagged] = useState<number[]>([])
   const [secondsLeft, setSecondsLeft] = useState(90 * 60)
+  const recorded = useRef(false)
 
   useEffect(() => {
     if (!started || submitted) return
@@ -119,9 +139,23 @@ export default function CbtPractice() {
     return { score, perQuestion }
   }, [answers])
 
+  useEffect(() => {
+    if (!submitted || recorded.current) return
+    const weakTopics = questions
+      .filter((q) => !result.perQuestion.find((r) => r.id === q.id)?.correct)
+      .map((q) => q.topic)
+    saveHistory({ at: Date.now(), score: result.score, secondsUsed: 90 * 60 - secondsLeft, weakTopics })
+    recorded.current = true
+  }, [submitted, result, secondsLeft])
+
   const q = questions[current]
   const answeredCount = questions.filter((question) => question.fields.every((f) => (answers[`${question.id}:${f.key}`] ?? '').trim() !== '')).length
   const time = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`
+
+  const startExam = () => {
+    recorded.current = false
+    setStarted(true)
+  }
 
   if (!started) {
     return <section className="cbt-practice panel">
@@ -130,7 +164,7 @@ export default function CbtPractice() {
         <h2>工業簿記 CBT操作・本番演習</h2>
         <p>公式画面のコピーではなく、日商簿記2級ネット試験の<strong>選択・入力・問題切替・見直し・90分</strong>という操作要素を独自UIで練習します。</p>
         <div className="cbt-notice"><strong>v1：</strong>工業簿記・原価計算のオリジナル5題。商業簿記はまだ含めません。</div>
-        <button onClick={() => setStarted(true)}>90分タイマーで開始</button>
+        <button onClick={startExam}>90分タイマーで開始</button>
       </div>
     </section>
   }
@@ -169,7 +203,7 @@ export default function CbtPractice() {
         </main>
       </div>
       <div className="cbt-submit"><span>本番想定：途中では正誤を表示しません。</span><button onClick={() => setSubmitted(true)}>採点して終了</button></div>
-    </> : <CbtResult result={result} answers={answers} onRetry={() => { setSubmitted(false); setStarted(false); setCurrent(0); setAnswers({}); setFlagged([]); setSecondsLeft(90 * 60) }} />}
+    </> : <CbtResult result={result} answers={answers} onRetry={() => { recorded.current = false; setSubmitted(false); setStarted(false); setCurrent(0); setAnswers({}); setFlagged([]); setSecondsLeft(90 * 60) }} />}
   </section>
 }
 
