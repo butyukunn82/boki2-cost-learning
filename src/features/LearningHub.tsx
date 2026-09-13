@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
@@ -17,7 +17,7 @@ type Topic = {
   id: string
   title: string
   subtitle: string
-  component: JSX.Element
+  component: ReactNode
 }
 
 const modeInfo: Record<Mode, { label: string; description: string }> = {
