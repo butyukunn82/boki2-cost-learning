@@ -2,28 +2,66 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildCbtQuestions, type CbtQuestion } from '../data/cbtTemplates'
 import { buildSupplementalCbtQuestions } from '../data/cbtSupplemental'
 
+type Difficulty = 'basic' | 'standard' | 'random'
 type CbtHistory = {
   at: number
   score: number
   secondsUsed: number
   weakTopics: string[]
+  difficulty?: Difficulty
 }
 
 const CBT_HISTORY_KEY = 'boki2-cbt-history-v1'
 const normalize = (v: string) => v.replace(/[,，\s円個]/g, '').trim()
 
-function buildExamSet(seed: number): CbtQuestion[] {
-  const pool = [...buildCbtQuestions(seed), ...buildSupplementalCbtQuestions(seed)]
+const difficultyInfo: Record<Difficulty, { label: string; description: string }> = {
+  basic: { label: '基礎確認', description: '勘定連絡・原価報告書・基本換算量などを中心に5題' },
+  standard: { label: '標準', description: '総合原価・差異・標準原価など計算を含む5題' },
+  random: { label: '総合ランダム', description: '全テンプレートから論点を混ぜて5題' },
+}
+
+const basicIds = new Set([
+  'journal-material-route', 'manufacturing-cost-report', 'job-order-costing',
+  'process-ending-eu', 'cvp-break-even', 'standard-cost-card',
+])
+const standardIds = new Set([
+  'process-ending-eu', 'additional-material-point', 'normal-spoilage-burden',
+  'grade-costing', 'material-variance', 'direct-labor-variance',
+  'absorption-direct-profit-gap', 'process-stage-transfer', 'standard-cost-card',
+])
+
+function dedupeByTemplate(items: CbtQuestion[]) {
+  return items.filter((q, index, all) => all.findIndex((x) => x.templateId === q.templateId) === index)
+}
+
+function shuffle<T>(items: T[], seed: number) {
+  const next = [...items]
   let x = (seed * 2654435761) >>> 0
   const random = () => {
     x = (x * 1664525 + 1013904223) >>> 0
     return x / 4294967296
   }
-  for (let i = pool.length - 1; i > 0; i -= 1) {
+  for (let i = next.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1))
-    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+    ;[next[i], next[j]] = [next[j], next[i]]
   }
-  return pool.slice(0, 5).map((q, index) => ({ ...q, id: index + 1, point: 20 }))
+  return next
+}
+
+function buildExamSet(seed: number, difficulty: Difficulty): CbtQuestion[] {
+  const basePool = dedupeByTemplate([
+    ...buildCbtQuestions(seed),
+    ...buildCbtQuestions(seed + 7),
+    ...buildCbtQuestions(seed + 19),
+  ])
+  const pool = dedupeByTemplate([...basePool, ...buildSupplementalCbtQuestions(seed)])
+  let filtered = pool
+  if (difficulty === 'basic') filtered = pool.filter((q) => basicIds.has(q.templateId))
+  if (difficulty === 'standard') filtered = pool.filter((q) => standardIds.has(q.templateId))
+  if (filtered.length < 5) filtered = pool
+  return shuffle(filtered, seed + (difficulty === 'basic' ? 101 : difficulty === 'standard' ? 202 : 303))
+    .slice(0, 5)
+    .map((q, index) => ({ ...q, id: index + 1, point: 20 }))
 }
 
 function saveHistory(item: CbtHistory) {
@@ -38,7 +76,8 @@ function saveHistory(item: CbtHistory) {
 
 export default function CbtPractice() {
   const [seed, setSeed] = useState(() => Math.floor(Date.now() / 1000) % 1000000)
-  const questions = useMemo(() => buildExamSet(seed), [seed])
+  const [difficulty, setDifficulty] = useState<Difficulty>('standard')
+  const questions = useMemo(() => buildExamSet(seed, difficulty), [seed, difficulty])
   const [started, setStarted] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -78,9 +117,9 @@ export default function CbtPractice() {
     const weakTopics = questions
       .filter((q) => !result.perQuestion.find((r) => r.id === q.id)?.correct)
       .map((q) => q.topic)
-    saveHistory({ at: Date.now(), score: result.score, secondsUsed: 90 * 60 - secondsLeft, weakTopics })
+    saveHistory({ at: Date.now(), score: result.score, secondsUsed: 90 * 60 - secondsLeft, weakTopics, difficulty })
     recorded.current = true
-  }, [submitted, result, secondsLeft, questions])
+  }, [submitted, result, secondsLeft, questions, difficulty])
 
   const q = questions[current]
   const answeredCount = questions.filter((question) => question.fields.every((f) => (answers[`${question.id}:${f.key}`] ?? '').trim() !== '')).length
@@ -97,21 +136,32 @@ export default function CbtPractice() {
     setSeed((s) => s + 1)
   }
 
+  const changeDifficulty = (next: Difficulty) => {
+    if (started) return
+    setDifficulty(next)
+    setSeed((s) => s + 1)
+  }
+
   if (!started) {
     return <section className="cbt-practice panel">
       <div className="cbt-start">
         <p className="eyebrow">CBT Practice</p>
         <h2>工業簿記 CBT操作・本番演習</h2>
         <p>公式画面を模写せず、<strong>選択・入力・問題切替・見直し・90分</strong>という試験行動だけを独自UIで練習します。</p>
-        <div className="cbt-notice"><strong>類題生成：</strong>複数論点のテンプレートから毎回5題を抽出。数値・正解・解説を同じデータから自動生成します。</div>
-        <button onClick={() => { recorded.current = false; setStarted(true) }}>90分タイマーで開始</button>
+        <div className="cbt-levels">
+          {(Object.keys(difficultyInfo) as Difficulty[]).map((key) => <button key={key} className={difficulty === key ? 'active' : ''} onClick={() => changeDifficulty(key)}>
+            <strong>{difficultyInfo[key].label}</strong><span>{difficultyInfo[key].description}</span>
+          </button>)}
+        </div>
+        <div className="cbt-notice"><strong>類題生成：</strong>複数論点のテンプレートから毎回5題を抽出。数値・正解・解説を同じデータから自動生成します。難易度はアプリ内の学習用区分で、公式の区分ではありません。</div>
+        <button onClick={() => { recorded.current = false; setStarted(true) }}>{difficultyInfo[difficulty].label}を90分タイマーで開始</button>
       </div>
     </section>
   }
 
   return <section className="cbt-practice panel">
     <header className="cbt-topbar">
-      <div><span>工業簿記 CBT Practice</span><b>問題 {q.id} / {questions.length}</b></div>
+      <div><span>工業簿記 CBT Practice · {difficultyInfo[difficulty].label}</span><b>問題 {q.id} / {questions.length}</b></div>
       <div className={secondsLeft < 600 ? 'cbt-timer urgent' : 'cbt-timer'}><span>残り時間</span><strong>{time}</strong></div>
     </header>
 
@@ -143,13 +193,13 @@ export default function CbtPractice() {
         </main>
       </div>
       <div className="cbt-submit"><span>途中では正誤を表示しません。</span><button onClick={() => setSubmitted(true)}>採点して終了</button></div>
-    </> : <CbtResult questions={questions} result={result} answers={answers} onRetry={resetForNewSet} />}
+    </> : <CbtResult questions={questions} result={result} answers={answers} difficulty={difficultyInfo[difficulty].label} onRetry={resetForNewSet} />}
   </section>
 }
 
-function CbtResult({ questions, result, answers, onRetry }: { questions: CbtQuestion[]; result: { score: number; perQuestion: { id: number; correct: boolean; checks: boolean[] }[] }; answers: Record<string, string>; onRetry: () => void }) {
+function CbtResult({ questions, result, answers, difficulty, onRetry }: { questions: CbtQuestion[]; result: { score: number; perQuestion: { id: number; correct: boolean; checks: boolean[] }[] }; answers: Record<string, string>; difficulty: string; onRetry: () => void }) {
   return <div className="cbt-result">
-    <div className="cbt-score"><span>得点</span><strong>{result.score}</strong><b>/ 100</b><small>{result.score >= 70 ? '70点以上：この演習では合格ライン' : '弱点を確認して再挑戦'}</small></div>
+    <div className="cbt-score"><span>{difficulty} 得点</span><strong>{result.score}</strong><b>/ 100</b><small>{result.score >= 70 ? '70点以上：この演習では合格ライン' : '弱点を確認して再挑戦'}</small></div>
     <div className="cbt-review">
       {questions.map((q) => {
         const r = result.perQuestion.find((x) => x.id === q.id)!
