@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import App from '../App'
+import InstallPrompt from './InstallPrompt'
 import ManufacturingCostReportLab from './ManufacturingCostReportLab'
 import ProcessCostLab from './ProcessCostLab'
 import ProcessMethodLab from './ProcessMethodLab'
@@ -98,6 +99,8 @@ export default function LearningHub() {
       </div>
       <div className="hub-state"><span>現在のモード</span><strong>{modeInfo[mode].label}</strong><small>{modeInfo[mode].description}</small></div>
     </header>
+
+    <InstallPrompt />
 
     <nav className="hub-modes" aria-label="学習モード">
       {(Object.keys(modeInfo) as Mode[]).map((key) => <button key={key} className={mode === key ? 'active' : ''} onClick={() => changeMode(key)}><strong>{modeInfo[key].label}</strong><span>{modeInfo[key].description}</span></button>)}
