@@ -1,0 +1,20 @@
+{
+  "name": "原価が見える学習室 - 簿記2級 工業簿記",
+  "short_name": "工業簿記Lab",
+  "description": "簿記2級の工業簿記・原価計算を、つながり・可視化・反射・CBTで学ぶ学習アプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#202532",
+  "lang": "ja",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
